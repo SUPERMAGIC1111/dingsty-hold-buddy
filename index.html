@@ -63,6 +63,12 @@ small{color:var(--mute)}
 </div>
 
 <div class="box">
+  <h2>How to try it in 20 seconds</h2>
+  <small>Dingsty first needs to hear <b>hold music</b>, then <b>someone talking</b>. Tick "Quick test", press Start, play any song from another phone for 3 seconds, then talk for 3 seconds. In a real call this happens by itself: hold music, then a person.</small>
+  <label style="flex-direction:row;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="quick" checked> Quick test (needs only 2 seconds of music)</label>
+</div>
+
+<div class="box">
   <h2>Ignore short announcements</h2>
   <label><span id="sensLabel">Alert after 3 seconds of talking</span>
   <input type="range" id="sens" min="2" max="9" step="1" value="3"></label>
@@ -121,7 +127,8 @@ small{color:var(--mute)}
     var s=watcher.push(r.label,Date.now());
     if(s.state==='hold'){setScene('hold');msg('Dingsty is waiting with you','Hold music detected. I will tell you the moment someone talks.')}
     else if(s.state==='alert'){alertNow()}
-    else{setScene('idle');msg('Listening…','Waiting for hold music.')}
+    else{setScene('idle');var need=Math.round(watcher.holdMs()/1000),got=Math.min(need,Math.round(s.musicMs/1000));
+      msg('Listening…','Waiting for hold music: heard '+got+' of '+need+' seconds. (Play some music, then talk.)')}
   }
   function alertNow(){
     setScene('alert');msg('SOMEONE IS TALKING! Pick up!','Say hello and use the sentence below.');
@@ -133,7 +140,7 @@ small{color:var(--mute)}
   function buildConfetti(){var c=$('confetti');c.innerHTML='';var cols=['#ffd21f','#e0268a','#2065e8','#1f9d57','#ef7d14'];for(var i=0;i<22;i++){var b=document.createElement('b');b.style.left=(Math.random()*100)+'%';b.style.background=cols[i%5];b.style.animationDelay=(Math.random()*1.4)+'s';c.appendChild(b)}}
   function chime(){try{var c=new (window.AudioContext||window.webkitAudioContext)(),t=c.currentTime;[784,988,1175].forEach(function(f,i){var o=c.createOscillator(),g=c.createGain();o.frequency.value=f;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.0001,t+i*.16);g.gain.exponentialRampToValueAtTime(.25,t+i*.16+.02);g.gain.exponentialRampToValueAtTime(.0001,t+i*.16+.2);o.start(t+i*.16);o.stop(t+i*.16+.22)})}catch(e){}}
 
-  function beginCommon(){env=[];watcher.reset();watcher.setSpeechMs(+$('sens').value*1000);$('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';
+  function beginCommon(){env=[];watcher.reset();watcher.setSpeechMs(+$('sens').value*1000);watcher.setHoldMs($('quick').checked&&mode==='mic'?2000:6000);$('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';
     $('start').hidden=true;$('sim').hidden=true;$('stop').hidden=false;setScene('idle');msg('Listening…','Waiting for hold music.');
     evalTimer=setInterval(evaluate,500);
     try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(w){wake=w}).catch(function(){})}catch(e){}}
@@ -141,6 +148,7 @@ small{color:var(--mute)}
     if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
     if(ctx){try{ctx.close()}catch(e){}ctx=null}
     try{wake&&wake.release()}catch(e){}wake=null;lvl.style.width='0';hear.textContent='not listening';
+    $('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';
     $('start').hidden=false;$('sim').hidden=false;$('stop').hidden=true;setScene('idle');msg('Ready','Press Start, then call the hotline on speaker next to this screen.')}
 
   $('start').addEventListener('click',function(){
@@ -162,5 +170,6 @@ small{color:var(--mute)}
   $('stop').addEventListener('click',endCommon);
   $('notit').addEventListener('click',function(){watcher.backToHold();$('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';setScene('hold');msg('Back to waiting','Okay, only a recording. I keep listening.');if(!evalTimer)evalTimer=setInterval(evaluate,500)});
   $('gotit').addEventListener('click',function(){endCommon();msg('Great. Go get them!','Dingsty is done. Press Start for the next call.')});
+  $('quick').addEventListener('change',function(){if(!$('stop').hidden)watcher.setHoldMs(this.checked&&mode==='mic'?2000:6000)});
 })();
 </script></body></html>

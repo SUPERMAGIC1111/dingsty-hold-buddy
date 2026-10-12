@@ -37,6 +37,8 @@
     return {
       get: function () { return s; },
       setSpeechMs: function (v) { minSpeechMs = v; },
+      setHoldMs: function (v) { minHoldMs = v; },
+      holdMs: function () { return minHoldMs; },
       reset: function () { s.state = 'listening'; s.musicMs = 0; s.speechMs = 0; s.last = null; s.prev = null; },
       backToHold: function () { s.state = 'hold'; s.speechMs = 0; },
       push: function (label, now) {
