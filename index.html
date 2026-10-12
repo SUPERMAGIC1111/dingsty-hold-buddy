@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dingsty Hold Buddy</title>
+<style>
+:root{--bg:#fffdf6;--ink:#1d1a16;--mute:#6c665b;--y:#ffd21f;--card:#fff;--line:rgba(30,25,10,.14);--ok:#1f9d57;--hot:#e0268a;--blue:#2065e8}
+@media (prefers-color-scheme:dark){:root{--bg:#14120e;--ink:#f6f1e6;--mute:#aaa397;--card:#1e1b16;--line:rgba(255,255,255,.16)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font:800 1.9rem/1 system-ui;letter-spacing:-.03em;margin:6px 0 0}
+.sub{color:var(--mute);margin:0}
+.stage{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:28px;padding:22px 16px 18px;text-align:center;overflow:hidden}
+.stage.alert{background:color-mix(in oklab,var(--y) 35%,var(--card));border-color:var(--y)}
+#dingsty{width:170px;height:170px;margin:0 auto;display:block;transform-origin:50% 90%}
+.idle #dingsty{animation:breathe 3.2s ease-in-out infinite}
+.hold #dingsty{animation:sway 2.6s ease-in-out infinite}
+.alert #dingsty{animation:dance .55s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.04,.97)}}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes dance{0%{transform:translateY(0) rotate(-12deg) scale(1.05,.92)}25%{transform:translateY(-26px) rotate(0) scale(.95,1.1)}50%{transform:translateY(0) rotate(12deg) scale(1.05,.92)}75%{transform:translateY(-26px) rotate(0) scale(.95,1.1)}100%{transform:translateY(0) rotate(-12deg) scale(1.05,.92)}}
+@media (prefers-reduced-motion:reduce){#dingsty{animation:none!important}}
+.status{font:800 1.35rem/1.2 system-ui;margin:12px 0 2px}
+.hint{color:var(--mute);font-size:.92rem;margin:0}
+.meter{height:8px;border-radius:99px;background:rgba(127,127,127,.2);margin:14px 6px 4px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
+.hear{font-size:.82rem;color:var(--mute)}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button{font:inherit;font-weight:700;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:11px 18px;cursor:pointer}
+button.go{background:var(--y);color:#1d1a16;border-color:var(--y)}
+button.no{background:var(--hot);color:#fff;border-color:var(--hot)}
+button.yes{background:var(--ok);color:#fff;border-color:var(--ok)}
+button[hidden]{display:none}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:14px 16px}
+.box h2{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:0 0 8px}
+pre{white-space:pre-wrap;margin:0;font:inherit;background:rgba(127,127,127,.12);border-radius:12px;padding:10px 12px}
+label{display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+input[type=range]{width:100%}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti b{position:absolute;top:-10px;width:10px;height:14px;border-radius:3px;animation:fall 1.6s linear infinite}
+@keyframes fall{to{transform:translateY(340px) rotate(540deg);opacity:.2}}
+small{color:var(--mute)}
+</style></head><body><main>
+<h1>Dingsty Hold Buddy</h1>
+<p class="sub">Call the hotline on speaker. Dingsty listens, waits with you, and dances when a person starts talking.</p>
+
+<section class="stage idle" id="stage" aria-live="polite">
+  <div class="confetti" id="confetti" hidden></div>
+  <canvas id="dingsty" width="480" height="480" role="img" aria-label="Dingsty, the yellow balloon character with a phone"></canvas>
+  <div class="status" id="status">Ready</div>
+  <p class="hint" id="hint">Press Start, then call the hotline on speaker next to this screen.</p>
+  <div class="meter" aria-hidden="true"><i id="lvl"></i></div>
+  <div class="hear" id="hear">not listening</div>
+</section>
+
+<div class="row">
+  <button class="go" id="start">Start listening</button>
+  <button id="sim">Run demo (no mic)</button>
+  <button id="stop" hidden>Stop</button>
+</div>
+<div class="row" id="answer" hidden>
+  <button class="yes" id="gotit">Yes, a human!</button>
+  <button class="no" id="notit">No, just a recording</button>
+</div>
+
+<div class="box">
+  <h2>Ignore short announcements</h2>
+  <label><span id="sensLabel">Alert after 3 seconds of talking</span>
+  <input type="range" id="sens" min="2" max="9" step="1" value="3"></label>
+</div>
+
+<div class="box"><h2>Say this when a person answers (German)</h2>
+<pre id="say">Guten Tag, ich möchte bitte mit einem Mitarbeiter sprechen. Es geht um meine Sendung. Meine Sendungsnummer ist: </pre></div>
+
+<div class="box"><h2>Privacy</h2>
+<small>The microphone is used on this device only. Nothing is recorded, saved or sent anywhere, not even the sound. Close the page and it stops. Dingsty only measures how loud and how rhythmic the sound is.</small></div>
+
+<div class="box"><h2>Honest limits (demo)</h2>
+<small>Use two devices: the phone call on speaker, this page on a laptop or second phone (a phone usually blocks the microphone during its own call). It guesses "music or talking" from rhythm, so a long recorded announcement can fool it: use the slider. It does not press menu numbers or speak for you yet. Tested only with synthetic sounds, not on real hotlines.</small></div>
+</main>
+<script src="analyzer.js"></script>
+<script>
+(function(){
+  var A=window.DingstyAnalyzer, $=function(i){return document.getElementById(i)};
+  var stage=$('stage'),status=$('status'),hint=$('hint'),lvl=$('lvl'),hear=$('hear');
+  var env=[],timer=null,evalTimer=null,ctx=null,stream=null,analyser=null,buf=null,mode=null,watcher=A.createWatcher({minHoldMs:6000,minSpeechMs:3000}),wake=null;
+  var WIN=Math.round(A.FPS*2.4);
+
+  /* Dingsty sprites: three poses cut from the retro-phone sheet, white background removed by flood fill from the edges
+     (keeps the white eye highlights and socks). idle = walking with the brick phone, hold = sitting on the phone, alert = dancing with two handsets. */
+  var sprites=[null,null,null],sheet=new Image(),curCls='idle',SPR={idle:1,hold:0,alert:2};
+  function keyOut(src){
+    var w=src.width,h=src.height,c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d',{willReadFrequently:true});x.drawImage(src,0,0);
+    var im=x.getImageData(0,0,w,h),d=im.data,seen=new Uint8Array(w*h),stack=[];
+    function white(i){return d[i*4]>238&&d[i*4+1]>238&&d[i*4+2]>238}
+    function push(i){if(!seen[i]&&white(i)){seen[i]=1;stack.push(i)}}
+    for(var xx=0;xx<w;xx++){push(xx);push((h-1)*w+xx)}for(var yy=0;yy<h;yy++){push(yy*w);push(yy*w+w-1)}
+    while(stack.length){var i=stack.pop(),px=i%w,py=(i/w)|0;if(px>0)push(i-1);if(px<w-1)push(i+1);if(py>0)push(i-w);if(py<h-1)push(i+w)}
+    for(var j=0;j<w*h;j++){if(seen[j])d[j*4+3]=0}
+    for(var k=0;k<w*h;k++){if(seen[k])continue;var px2=k%w,py2=(k/w)|0,edge=(px2>0&&seen[k-1])||(px2<w-1&&seen[k+1])||(py2>0&&seen[k-w])||(py2<h-1&&seen[k+w]);
+      if(edge){var m=Math.min(d[k*4],d[k*4+1],d[k*4+2]);if(m>200)d[k*4+3]=90}}
+    x.putImageData(im,0,0);return c;
+  }
+  function paint(){var cv=$('dingsty'),g=cv.getContext('2d');g.clearRect(0,0,cv.width,cv.height);var s=sprites[SPR[curCls]];if(!s)return;
+    var sc=Math.min(cv.width/s.width,cv.height/s.height);var w2=s.width*sc,h2=s.height*sc;g.drawImage(s,(cv.width-w2)/2,cv.height-h2,w2,h2)}
+  sheet.onload=function(){var third=Math.floor(sheet.width/3);for(var i=0;i<3;i++){var cc=document.createElement('canvas');cc.width=third;cc.height=sheet.height;cc.getContext('2d').drawImage(sheet,i*third,0,third,sheet.height,0,0,third,sheet.height);sprites[i]=keyOut(cc)}paint()};
+  sheet.src='dingsty-phone.png';
+  function setScene(cls){stage.className='stage '+cls;curCls=cls;paint()}
+  function msg(s,h){status.textContent=s;hint.textContent=h||''}
+
+  $('sens').addEventListener('input',function(){var v=+this.value;$('sensLabel').textContent='Alert after '+v+' seconds of talking';watcher.setSpeechMs(v*1000)});
+
+  function frame(rms){ // one 25 ms frame
+    env.push(rms); if(env.length>WIN*2)env.shift();
+    lvl.style.width=Math.min(100,Math.sqrt(rms)*320)+'%';
+  }
+  var lastLabel='-';
+  function evaluate(){
+    if(env.length<A.FPS)return;
+    var r=A.classify(env.slice(-WIN)); lastLabel=r.label;
+    hear.textContent='hearing: '+({music:'music / steady sound',speech:'talking',silence:'silence',unsure:'not sure'}[r.label]);
+    var s=watcher.push(r.label,Date.now());
+    if(s.state==='hold'){setScene('hold');msg('Dingsty is waiting with you','Hold music detected. I will tell you the moment someone talks.')}
+    else if(s.state==='alert'){alertNow()}
+    else{setScene('idle');msg('Listening…','Waiting for hold music.')}
+  }
+  function alertNow(){
+    setScene('alert');msg('SOMEONE IS TALKING! Pick up!','Say hello and use the sentence below.');
+    $('answer').hidden=false;$('confetti').hidden=false;buildConfetti();
+    chime();try{navigator.vibrate&&navigator.vibrate([300,120,300,120,500])}catch(e){}
+    document.title='🔔 A human! Dingsty';
+    clearInterval(evalTimer);evalTimer=null;
+  }
+  function buildConfetti(){var c=$('confetti');c.innerHTML='';var cols=['#ffd21f','#e0268a','#2065e8','#1f9d57','#ef7d14'];for(var i=0;i<22;i++){var b=document.createElement('b');b.style.left=(Math.random()*100)+'%';b.style.background=cols[i%5];b.style.animationDelay=(Math.random()*1.4)+'s';c.appendChild(b)}}
+  function chime(){try{var c=new (window.AudioContext||window.webkitAudioContext)(),t=c.currentTime;[784,988,1175].forEach(function(f,i){var o=c.createOscillator(),g=c.createGain();o.frequency.value=f;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.0001,t+i*.16);g.gain.exponentialRampToValueAtTime(.25,t+i*.16+.02);g.gain.exponentialRampToValueAtTime(.0001,t+i*.16+.2);o.start(t+i*.16);o.stop(t+i*.16+.22)})}catch(e){}}
+
+  function beginCommon(){env=[];watcher.reset();watcher.setSpeechMs(+$('sens').value*1000);$('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';
+    $('start').hidden=true;$('sim').hidden=true;$('stop').hidden=false;setScene('idle');msg('Listening…','Waiting for hold music.');
+    evalTimer=setInterval(evaluate,500);
+    try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(w){wake=w}).catch(function(){})}catch(e){}}
+  function endCommon(){clearInterval(timer);clearInterval(evalTimer);timer=evalTimer=null;
+    if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+    if(ctx){try{ctx.close()}catch(e){}ctx=null}
+    try{wake&&wake.release()}catch(e){}wake=null;lvl.style.width='0';hear.textContent='not listening';
+    $('start').hidden=false;$('sim').hidden=false;$('stop').hidden=true;setScene('idle');msg('Ready','Press Start, then call the hotline on speaker next to this screen.')}
+
+  $('start').addEventListener('click',function(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg('No microphone here','Open this page in Safari or Chrome, or use the demo.');return}
+    navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){
+      stream=s;ctx=new (window.AudioContext||window.webkitAudioContext)();var src=ctx.createMediaStreamSource(s);analyser=ctx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);mode='mic';beginCommon();
+      timer=setInterval(function(){analyser.getFloatTimeDomainData(buf);var sum=0;for(var i=0;i<buf.length;i++)sum+=buf[i]*buf[i];frame(Math.sqrt(sum/buf.length))},A.FRAME_MS);
+    }).catch(function(){msg('Microphone blocked','Allow the microphone for this page, or use the demo.')});
+  });
+
+  // demo: synthetic hold music for 9 s, then speech-like rhythm: goes through the SAME analyser and watcher
+  $('sim').addEventListener('click',function(){
+    mode='sim';beginCommon();var t0=Date.now(),SPEED=1,r=Math.random;
+    timer=setInterval(function(){var t=(Date.now()-t0)/1000*SPEED,v;
+      if(t<9){v=0.08*(1+.18*Math.sin(2*Math.PI*2*t))+.004*r()}
+      else{var syl=Math.max(0,Math.sin(2*Math.PI*4.5*t)),word=(Math.sin(2*Math.PI*.8*t)>-.4)?1:.05;v=.002+.09*syl*word*(.7+.3*r())}
+      frame(v)},A.FRAME_MS/SPEED);
+  });
+  $('stop').addEventListener('click',endCommon);
+  $('notit').addEventListener('click',function(){watcher.backToHold();$('answer').hidden=true;$('confetti').hidden=true;document.title='Dingsty Hold Buddy';setScene('hold');msg('Back to waiting','Okay, only a recording. I keep listening.');if(!evalTimer)evalTimer=setInterval(evaluate,500)});
+  $('gotit').addEventListener('click',function(){endCommon();msg('Great. Go get them!','Dingsty is done. Press Start for the next call.')});
+})();
+</script></body></html>
