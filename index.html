@@ -153,10 +153,13 @@ small{color:var(--mute)}
 
   $('start').addEventListener('click',function(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg('No microphone here','Open this page in Safari or Chrome, or use the demo.');return}
+    // Safari only starts audio if the AudioContext is created and resumed INSIDE the tap, before we wait for the microphone prompt.
+    try{ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.resume)ctx.resume()}catch(e){ctx=null}
+    msg('Waiting for the microphone…','Tap "Allow" when your browser asks. Dingsty only measures loudness and rhythm.');
     navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(s){
-      stream=s;ctx=new (window.AudioContext||window.webkitAudioContext)();var src=ctx.createMediaStreamSource(s);analyser=ctx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);mode='mic';beginCommon();
+      stream=s;if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.resume)ctx.resume();var src=ctx.createMediaStreamSource(s);analyser=ctx.createAnalyser();analyser.fftSize=1024;src.connect(analyser);buf=new Float32Array(analyser.fftSize);mode='mic';beginCommon();
       timer=setInterval(function(){analyser.getFloatTimeDomainData(buf);var sum=0;for(var i=0;i<buf.length;i++)sum+=buf[i]*buf[i];frame(Math.sqrt(sum/buf.length))},A.FRAME_MS);
-    }).catch(function(){msg('Microphone blocked','Allow the microphone for this page, or use the demo.')});
+    }).catch(function(){try{ctx&&ctx.close()}catch(e){}ctx=null;msg('Microphone blocked','Allow the microphone for this page in the browser settings, or use the demo.')});
   });
 
   // demo: synthetic hold music for 9 s, then speech-like rhythm: goes through the SAME analyser and watcher
