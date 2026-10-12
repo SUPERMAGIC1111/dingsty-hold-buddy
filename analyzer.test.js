@@ -8,7 +8,8 @@ function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) /
 // "hold music": steady level, slow beat at 2 Hz (120 bpm) with small swing
 function music(seed) { const r = rnd(seed); const e = []; for (let i = 0; i < N; i++) { const t = i / A.FPS; e.push(0.08 * (1 + 0.18 * Math.sin(2 * Math.PI * 2 * t)) + 0.004 * r()); } return e; }
 // "speech": syllables at ~4.5 Hz with word pauses (level swings between near zero and loud)
-function speech(seed) { const r = rnd(seed); const e = []; for (let i = 0; i < N; i++) { const t = i / A.FPS; const syl = Math.max(0, Math.sin(2 * Math.PI * 4.5 * t)); const word = (Math.sin(2 * Math.PI * 0.8 * t + seed) > -0.4) ? 1 : 0.05; e.push(0.002 + 0.09 * syl * word * (0.7 + 0.3 * r())); } return e; }
+// irregular syllable onsets (random 160-290 ms apart) and random word pauses, like real speech
+function speech(seed) { const r = rnd(seed); const e = new Array(N).fill(0.002); let t = 0.05, word = 0; while (t < 2.4) { const dur = 0.09 + 0.07 * r(); const amp = 0.04 + 0.06 * r(); for (let i = Math.round(t * A.FPS); i < Math.round((t + dur) * A.FPS) && i < N; i++) e[i] += amp * Math.sin(Math.PI * (i / A.FPS - t) / dur); t += 0.16 + 0.13 * r(); if (++word % 4 === 0) t += 0.15 + 0.35 * r(); } return e; }
 const silence = () => Array.from({ length: N }, () => 0.0008);
 
 test('silence is silence', () => assert.equal(A.classify(silence()).label, 'silence'));

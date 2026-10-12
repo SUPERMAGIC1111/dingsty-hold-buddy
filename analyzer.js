@@ -11,6 +11,12 @@
     for (var i = 0; i < x.length; i++) { s0 = x[i] + c * s1 - s2; s2 = s1; s1 = s0; }
     return s1 * s1 + s2 * s2 - c * s1 * s2;
   }
+  function periodicity(x) { // strongest normalised autocorrelation of the (mean-removed) envelope at lags 0.125 to 1.0 s
+    var r0 = 0, i, L, best = 0; for (i = 0; i < x.length; i++) r0 += x[i] * x[i];
+    if (r0 <= 0) return 0;
+    for (L = 5; L <= 40; L++) { var s = 0; for (i = 0; i + L < x.length; i++) s += x[i] * x[i + L]; var v = s / r0 * (x.length / (x.length - L)); if (v > best) best = v; }
+    return best;
+  }
   function classify(env, opts) {
     opts = opts || {};
     var silenceRms = opts.silenceRms || 0.004;
@@ -22,10 +28,12 @@
     var syl = 0, tot = 0, f;
     for (f = 0.5; f <= 12; f += 0.5) { var p = goertzel(x, f); tot += p; if (f >= 3 && f <= 7) syl += p; }
     var ratio = tot > 0 ? syl / tot : 0;
+    var per = periodicity(x);
     var label = 'unsure';
-    if (cv > 0.55 && ratio > 0.3) label = 'speech';
+    if (per > 0.7) label = 'music';                       // a perfectly steady beat is music, speech is irregular
+    else if (cv > 0.55 && ratio > 0.3) label = 'speech';
     else if (cv < 0.45 || ratio < 0.18) label = 'music';
-    return { label: label, cv: cv, syl: ratio, level: m };
+    return { label: label, cv: cv, syl: ratio, per: per, level: m };
   }
 
   /* State machine. Call push(label, nowMs) every evaluation (about every 500 ms).

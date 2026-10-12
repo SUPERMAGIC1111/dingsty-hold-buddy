@@ -161,10 +161,11 @@ small{color:var(--mute)}
 
   // demo: synthetic hold music for 9 s, then speech-like rhythm: goes through the SAME analyser and watcher
   $('sim').addEventListener('click',function(){
-    mode='sim';beginCommon();var t0=Date.now(),SPEED=1,r=Math.random;
+    mode='sim';beginCommon();var t0=Date.now(),SPEED=1,r=Math.random,syls=[],tt=9,wc=0;
+    while(tt<60){var dur=.09+.07*r(),amp=.04+.06*r();syls.push([tt,dur,amp]);tt+=.16+.13*r();if(++wc%4===0)tt+=.15+.35*r()} // irregular syllables like real speech
     timer=setInterval(function(){var t=(Date.now()-t0)/1000*SPEED,v;
       if(t<9){v=0.08*(1+.18*Math.sin(2*Math.PI*2*t))+.004*r()}
-      else{var syl=Math.max(0,Math.sin(2*Math.PI*4.5*t)),word=(Math.sin(2*Math.PI*.8*t)>-.4)?1:.05;v=.002+.09*syl*word*(.7+.3*r())}
+      else{v=.002;for(var i=0;i<syls.length;i++){var s=syls[i];if(t>=s[0]&&t<s[0]+s[1])v+=s[2]*Math.sin(Math.PI*(t-s[0])/s[1])}}
       frame(v)},A.FRAME_MS/SPEED);
   });
   $('stop').addEventListener('click',endCommon);
